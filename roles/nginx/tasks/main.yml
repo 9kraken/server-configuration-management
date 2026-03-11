@@ -1,0 +1,75 @@
+---
+- name: Install Nginx
+  apt:
+    name: nginx
+    state: present
+
+- name: Ensure limit_req_zone is in nginx.conf
+  lineinfile:
+    path: /etc/nginx/nginx.conf
+    regexp: 'limit_req_zone .* zone=static_limit'
+    line: "    limit_req_zone $binary_remote_addr zone=static_limit:10m rate=10r/s;"
+    insertafter: 'http {'
+    state: present
+  notify: restart nginx
+
+- name: Remove the conflicting file if it exists
+  file:
+    path: /etc/nginx/conf.d/ratelimit.conf
+    state: absent
+  notify: restart nginx
+
+- name: Create Nginx config for the site
+  copy:
+    dest: /etc/nginx/sites-available/{{ site_folder_name }}
+    content: |
+      server {
+          listen 80;
+          server_name {{ site_domain }};
+          return 301 https://{{ site_domain }}:{{ site_port }}$request_uri;
+      }
+
+      server {
+          listen {{ site_port }} ssl; 
+          server_name {{ site_domain }};
+
+          root {{ remote_site_path }};
+          index index.html;
+
+          location / {
+              try_files $uri $uri/ =404;
+              
+        # Rate limiting
+              limit_req zone=static_limit burst=20 nodelay;
+
+              # Security Headers
+              add_header X-Frame-Options "SAMEORIGIN" always;
+              add_header X-Content-Type-Options "nosniff" always;
+              add_header X-XSS-Protection "1; mode=block" always;
+              add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+              add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:;" always;
+          }
+
+          ssl_certificate /etc/letsencrypt/live/{{ site_domain }}/fullchain.pem;
+          ssl_certificate_key /etc/letsencrypt/live/{{ site_domain }}/privkey.pem;
+          include /etc/letsencrypt/options-ssl-nginx.conf;
+          ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+          access_log /var/log/nginx/site.access.log;
+          error_log /var/log/nginx/site.error.log;
+      } 
+    # /content
+
+  notify: restart nginx
+
+- name: Enable site by symlink
+  file:
+    src: "/etc/nginx/sites-available/{{ site_folder_name }}"
+    dest: "/etc/nginx/sites-enabled/{{ site_folder_name }}"
+    state: link 
+
+- name: Remove default config
+  file:
+    path: "/etc/nginx/sites-enabled/default"
+    state: absent
+  notify: restart nginx

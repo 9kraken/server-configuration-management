@@ -1,0 +1,27 @@
+---
+- name: Ensure destination directory exists and has correct owner
+  file:
+    path: "{{ remote_site_path }}"
+    state: directory
+    owner: "{{ ssh_user }}"
+    group: www-data
+    mode: '0755'
+
+- name: Deploy site using rsync
+  synchronize:
+    src: "{{ local_site_path }}"
+    dest: "{{ remote_site_path }}"
+    delete: yes
+    recursive: yes
+    rsync_opts:
+      - "--omit-dir-times"
+      - "--no-perms"
+      - "--chown={{ ssh_user }}:www-data"
+
+- name: Fix permissions after sync
+  file:
+    path: "{{ remote_site_path }}"
+    owner: www-data
+    group: www-data
+    mode: '0775'
+    recurse: yes

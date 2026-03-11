@@ -1,0 +1,28 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install base packages
+  apt:
+    name:
+      - curl
+      - git
+      - rsync # for synchronize module
+      - fail2ban
+      - python3-pip
+    state: present
+
+- name: Ensure fail2ban is running
+  service:
+    name: fail2ban
+    state: started
+    enabled: yes
+
+- name: Allow user to run rsync without sudo password
+  copy:
+    dest: /etc/sudoers.d/ansible_rsync
+    content: "{{ ssh_user }} ALL=(ALL) NOPASSWD: /usr/bin/rsync"
+    mode: '0440'
+    validate: '/usr/sbin/visudo -cf %s'
