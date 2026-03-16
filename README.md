@@ -76,11 +76,11 @@ local_site_path: "/path/to/website/"        # Local path to your website files
 remote_site_path: "/var/www/website/"       # Remote path where site will be deployed
 site_domain: "example.com"                  # Your domain name
 site_folder_name: "website"                 # Folder name for site configuration
-site_port: "8443"                          # Port for the website
-ssh_key_path: "~/.ssh/your_key"            # Path to your private SSH key (no passphrase)
-ssh_public_key_path: "~/.ssh/your_key.pub" # Path to your public SSH key
-ssh_user: "deploy_user"                    # SSH user on the server
-target_host: "your.server.ip"              # Server IP address or hostname
+site_port: "8443"                           # Port for the website
+ssh_key_path: "~/.ssh/your_key"             # Path to your private SSH key (no passphrase)
+ssh_public_key_path: "~/.ssh/your_key.pub"  # Path to your public SSH key
+ssh_user: "deploy_user"                     # SSH user on the server
+target_host: "your.server.ip"               # Server IP address or hostname
 ```
 
 ### 2. Run Ansible Playbook
